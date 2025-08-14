@@ -7,12 +7,12 @@ const { FiTool, FiPhone, FiMail, FiMapPin, FiClock } = FiIcons;
 
 function Footer() {
   const services = [
-    'Furniture Assembly',
-    'Drywall Repair',
-    'TV Mount Installation',
-    'Pressure Washing',
-    'Gutter Cleaning',
-    'Tiling Services',
+    { name: 'Furniture Assembly', href: '/services/furniture-assembly' },
+    { name: 'Drywall Repair', href: '/services/drywall-installation-repair' },
+    { name: 'TV Mount Installation', href: '/services/tv-mount-installation' },
+    { name: 'Pressure Washing', href: '/services/pressure-washing' },
+    { name: 'Gutter Cleaning', href: '/services' },
+    { name: 'Tiling Services', href: '/services' },
   ];
 
   const areas = [
@@ -63,8 +63,10 @@ function Footer() {
             <h4 className="text-lg font-semibold mb-4">Popular Services</h4>
             <ul className="space-y-2">
               {services.map((service) => (
-                <li key={service}>
-                  <span className="text-gray-300">{service}</span>
+                <li key={service.name}>
+                  <Link to={service.href} className="text-gray-300 hover:text-bright-green transition-colors">
+                    {service.name}
+                  </Link>
                 </li>
               ))}
             </ul>
