@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import AddressAutocomplete from '../../common/AddressAutocomplete';
 import { motion } from 'framer-motion';
 import * as FiIcons from 'react-icons/fi';
@@ -33,7 +33,12 @@ const HourlyBookingForm = ({ formData, onDataChange, onSubmit }) => {
     }
   ];
 
-  
+  // Scroll to top after successful submit
+  useEffect(() => {
+    if (formSubmitted) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [formSubmitted]);
 
   const handleFileUpload = (files) => {
     const room = Math.max(0, 10 - (formData.hourlyPhotos?.length || 0));
