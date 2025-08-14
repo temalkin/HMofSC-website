@@ -26,11 +26,11 @@ function Header() {
       <div className="w-full px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-3">
           {/* Logo - занимает левую часть */}
-          <Link to="/" className="flex items-center space-x-3 flex-shrink-0">
+          <Link to="/" className="flex items-center space-x-3 min-w-0">
             <div className="bg-bright-green p-2 rounded-lg">
               <SafeIcon icon={FiTool} className="h-6 w-6 text-white" />
             </div>
-            <div className="text-center">
+            <div className="text-center min-w-0">
               <h1 className="text-lg font-bold text-gray-800 leading-tight">
                 Handyman of South Charlotte
               </h1>
@@ -58,8 +58,8 @@ function Header() {
             ))}
           </nav>
 
-          {/* Правая часть - для баланса */}
-          <div className="flex-shrink-0 w-20 lg:w-24">
+          {/* Правая часть - для баланса (скрыта на мобилках, чтобы не толкать меню) */}
+          <div className="hidden lg:block flex-shrink-0 lg:w-24">
             {/* Можно добавить кнопку звонка или другую информацию */}
           </div>
 
