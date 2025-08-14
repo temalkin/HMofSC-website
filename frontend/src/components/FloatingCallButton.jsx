@@ -84,14 +84,11 @@ function FloatingCallButton() {
   if (!isMounted) return null;
 
   return createPortal(
-    <div
-      className="fixed bottom-6 right-6 z-50 relative"
-      style={{ position: 'fixed', right: '1.5rem', bottom: '1.5rem', left: 'auto' }}
-    >
-      {/* Call Button */}
+    <div className="fixed bottom-6 right-6 z-50 relative">
+      {/* Call Button stays on top; tooltip positioned relative without shifting it */}
       <motion.button
         onClick={handleCall}
-        className={`bg-ai-purple hover:bg-purple-600 text-white p-4 rounded-full shadow-lg transition-all duration-300 ${
+        className={`relative z-10 bg-ai-purple hover:bg-purple-600 text-white p-4 rounded-full shadow-lg transition-all duration-300 ${
           shouldShake ? 'animate-shake' : 'hover:scale-110'
         }`}
         whileHover={{ scale: 1.1 }}
