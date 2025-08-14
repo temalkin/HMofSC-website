@@ -3,22 +3,33 @@ import { motion, AnimatePresence } from 'framer-motion';
 import SafeIcon from '../common/SafeIcon';
 import * as FiIcons from 'react-icons/fi';
 
-const { FiPhone, FiMessageCircle } = FiIcons;
+const { FiPhone, FiMessageCircle, FiX } = FiIcons;
 
 function FloatingCallButton() {
   const [showTooltip, setShowTooltip] = useState(true);
   const [shouldShake, setShouldShake] = useState(false);
+  const [tooltipDismissed, setTooltipDismissed] = useState(false);
 
   useEffect(() => {
+    // Load persisted dismissal state
+    try {
+      const v = localStorage.getItem('aiTooltipDismissed');
+      if (v === '1' || v === 'true') setTooltipDismissed(true);
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    if (tooltipDismissed) return; // Do nothing if user closed it
     // Auto-hide tooltip after 10 seconds 
     const hideTimer = setTimeout(() => {
       setShowTooltip(false);
     }, 10000);
 
     return () => clearTimeout(hideTimer);
-  }, []);
+  }, [tooltipDismissed]);
 
   useEffect(() => {
+    if (tooltipDismissed) return; // Don't reshow if dismissed
     // Show tooltip again after 30 seconds of inactivity
     let inactivityTimer;
     let shakeTimer;
@@ -57,7 +68,7 @@ function FloatingCallButton() {
         document.removeEventListener(event, resetInactivityTimer, true);
       });
     };
-  }, []);
+  }, [tooltipDismissed]);
 
   const handleCall = () => {
     // In a real implementation, this would initiate a call to the AI assistant
@@ -68,13 +79,25 @@ function FloatingCallButton() {
     <div className="fixed bottom-6 right-6 z-50">
       {/* Tooltip */}
       <AnimatePresence>
-        {showTooltip && (
+        {showTooltip && !tooltipDismissed && (
           <motion.div
             initial={{ opacity: 0, scale: 0.8, x: 20 }}
             animate={{ opacity: 1, scale: 1, x: 0 }}
             exit={{ opacity: 0, scale: 0.8, x: 20 }}
-            className="absolute bottom-16 right-0 bg-white rounded-lg shadow-lg p-3 mb-2 max-w-xs"
+            className="absolute bottom-16 right-0 bg-white rounded-lg shadow-lg p-3 mb-2 max-w-xs relative"
           >
+            <button
+              type="button"
+              aria-label="Close"
+              onClick={() => {
+                setTooltipDismissed(true);
+                setShowTooltip(false);
+                try { localStorage.setItem('aiTooltipDismissed', '1'); } catch {}
+              }}
+              className="absolute top-2 right-2 p-1 rounded hover:bg-gray-100 text-gray-500 hover:text-gray-700"
+            >
+              <SafeIcon icon={FiX} className="h-4 w-4" />
+            </button>
             <div className="flex items-start space-x-2">
               <SafeIcon icon={FiMessageCircle} className="h-5 w-5 text-ai-purple mt-0.5" />
               <div>
