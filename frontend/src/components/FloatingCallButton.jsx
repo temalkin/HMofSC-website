@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import SafeIcon from '../common/SafeIcon';
 import * as FiIcons from 'react-icons/fi';
@@ -9,6 +10,7 @@ function FloatingCallButton() {
   const [showTooltip, setShowTooltip] = useState(true);
   const [shouldShake, setShouldShake] = useState(false);
   const [tooltipDismissed, setTooltipDismissed] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
     // Load persisted dismissal state
@@ -16,6 +18,10 @@ function FloatingCallButton() {
       const v = localStorage.getItem('aiTooltipDismissed');
       if (v === '1' || v === 'true') setTooltipDismissed(true);
     } catch {}
+  }, []);
+
+  useEffect(() => {
+    setIsMounted(true);
   }, []);
 
   useEffect(() => {
@@ -75,8 +81,13 @@ function FloatingCallButton() {
     window.location.href = 'tel:+19803167792';
   };
 
-  return (
-    <div className="fixed bottom-6 right-6 z-50 relative">
+  if (!isMounted) return null;
+
+  return createPortal(
+    <div
+      className="fixed bottom-6 right-6 z-50 relative"
+      style={{ position: 'fixed', right: '1.5rem', bottom: '1.5rem', left: 'auto' }}
+    >
       {/* Call Button */}
       <motion.button
         onClick={handleCall}
@@ -124,7 +135,8 @@ function FloatingCallButton() {
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </div>,
+    document.body
   );
 }
 
