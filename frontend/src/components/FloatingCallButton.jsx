@@ -76,13 +76,7 @@ function FloatingCallButton() {
   };
 
   return (
-    <div
-      className="fixed bottom-6 right-6 left-auto z-50 relative"
-      style={{
-        right: 'calc(env(safe-area-inset-right, 0px) + 1.5rem)',
-        bottom: 'calc(env(safe-area-inset-bottom, 0px) + 1.5rem)'
-      }}
-    >
+    <div className="fixed bottom-6 right-6 z-50 relative">
       {/* Call Button */}
       <motion.button
         onClick={handleCall}
