@@ -76,7 +76,21 @@ function FloatingCallButton() {
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-50">
+    <div className="fixed bottom-6 right-6 z-50 relative">
+      {/* Call Button */}
+      <motion.button
+        onClick={handleCall}
+        className={`bg-ai-purple hover:bg-purple-600 text-white p-4 rounded-full shadow-lg transition-all duration-300 ${
+          shouldShake ? 'animate-shake' : 'hover:scale-110'
+        }`}
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.95 }}
+        animate={shouldShake ? { x: [-5, 5, -5, 5, 0] } : {}}
+        transition={{ duration: 0.5 }}
+      >
+        <SafeIcon icon={FiPhone} className="h-6 w-6" />
+      </motion.button>
+
       {/* Tooltip */}
       <AnimatePresence>
         {showTooltip && !tooltipDismissed && (
@@ -110,20 +124,6 @@ function FloatingCallButton() {
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* Call Button */}
-      <motion.button
-        onClick={handleCall}
-        className={`bg-ai-purple hover:bg-purple-600 text-white p-4 rounded-full shadow-lg transition-all duration-300 ${
-          shouldShake ? 'animate-shake' : 'hover:scale-110'
-        }`}
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.95 }}
-        animate={shouldShake ? { x: [-5, 5, -5, 5, 0] } : {}}
-        transition={{ duration: 0.5 }}
-      >
-        <SafeIcon icon={FiPhone} className="h-6 w-6" />
-      </motion.button>
     </div>
   );
 }
