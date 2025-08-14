@@ -53,6 +53,8 @@ function Footer() {
               <li><Link to="/gallery" className="text-gray-300 hover:text-bright-green transition-colors">Gallery</Link></li>
               <li><Link to="/reviews" className="text-gray-300 hover:text-bright-green transition-colors">Reviews</Link></li>
               <li><Link to="/faq" className="text-gray-300 hover:text-bright-green transition-colors">FAQ</Link></li>
+              <li><Link to="/privacy" className="text-gray-300 hover:text-bright-green transition-colors">Privacy Policy</Link></li>
+              <li><Link to="/terms" className="text-gray-300 hover:text-bright-green transition-colors">Terms & Conditions</Link></li>
             </ul>
           </div>
 

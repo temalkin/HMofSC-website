@@ -159,7 +159,7 @@ function FAQ() {
                 <SafeIcon icon={FiPhone} className="mr-2 h-5 w-5" /> Call Our AI Assistant (Beta – We are still working to improve quality)
               </a>
               <a
-                href="/contact"
+                href="contact#/contact"
                 className="bg-bright-green text-white px-8 py-4 rounded-lg font-semibold text-lg hover:bg-green-600 transition-colors inline-flex items-center justify-center"
               >
                 <SafeIcon icon={FiCalendar} className="mr-2 h-5 w-5" /> Contact Us

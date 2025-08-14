@@ -50,7 +50,9 @@ export const sendTelegramWithPhotos = async (photos = [], caption = '') => {
         const blob = await resp.blob();
         fd.append('files', blob, p.name || `photo-${idx}.jpg`);
         appended += 1;
-      } catch (_) {}
+      } catch (err) {
+        console.warn('Failed to append blob URL photo', err);
+      }
     }
   }
   if (appended === 0) return sendTelegram(caption || '');
@@ -107,6 +109,41 @@ export const uploadPhotos = async ({ requestId, origin, files, sessionId }) => {
   if (!res.ok) {
     const t = await res.text().catch(() => '');
     throw new Error(`uploadPhotos failed: ${res.status} ${t}`);
+  }
+  return res.json().catch(() => ({}));
+};
+
+
+// AI realtime persistence
+export const aiEnsureRequest = async ({ sessionId, source = 'website' }) => {
+  const res = await fetch(apiUrl('/api/ai/ensure-request'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ session_id: sessionId, source }),
+  });
+  if (!res.ok) {
+    const t = await res.text().catch(() => '');
+    throw new Error(`aiEnsureRequest failed: ${res.status} ${t}`);
+  }
+  return res.json().catch(() => ({}));
+};
+
+export const aiIngestMessage = async ({ sessionId, sender, content = '', photosCount = 0, storagePaths = null }) => {
+  const payload = {
+    session_id: sessionId,
+    sender,
+    content,
+    photos_count: Number(photosCount) || 0,
+  };
+  if (Array.isArray(storagePaths) && storagePaths.length > 0) payload.storage_paths = storagePaths;
+  const res = await fetch(apiUrl('/api/ai/ingest-message'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const t = await res.text().catch(() => '');
+    throw new Error(`aiIngestMessage failed: ${res.status} ${t}`);
   }
   return res.json().catch(() => ({}));
 };

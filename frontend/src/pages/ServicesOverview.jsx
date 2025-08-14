@@ -17,7 +17,8 @@ const {
   FiLayers,
   FiBox,
   FiCompass,
-  FiShield
+  FiShield,
+  FiPhone,
 } = FiIcons;
 
 function ServicesOverview() {
@@ -270,12 +271,13 @@ function ServicesOverview() {
               >
                 Contact Us
               </Link>
-              <Link
-                to="/contact"
-                className="bg-blue-600 text-white px-8 py-4 rounded-lg font-semibold text-lg hover:bg-blue-700 transition-colors"
+              <a
+                href="tel:+19803167792"
+                className="bg-blue-600 text-white px-8 py-4 rounded-lg font-semibold text-lg hover:bg-blue-700 transition-colors inline-flex items-center justify-center gap-2"
               >
-                Contact Us
-              </Link>
+                <SafeIcon icon={FiPhone} className="w-5 h-5" />
+                Call AI Assistant
+              </a>
             </div>
           </motion.div>
         </div>

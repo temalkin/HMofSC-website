@@ -7,32 +7,71 @@ import * as FiIcons from 'react-icons/fi';
 const { FiStar, FiPhone, FiCalendar, FiMessageCircle, FiHome } = FiIcons;
 
 function Reviews() {
-  const googleReviews = [
-    {
-      name: "Sarah M.",
-      rating: 5,
-      date: "July 12, 2024",
-      text: "I needed help with furniture assembly after moving to Charlotte, and Handyman of South Charlotte was amazing! Their AI booking system made scheduling super easy, and the handyman arrived right on time. He assembled all my IKEA furniture perfectly and even cleaned up afterward. Highly recommend!"
-    },
-    {
-      name: "Michael T.",
-      rating: 5,
-      date: "June 28, 2024",
-      text: "I had a bathroom renovation project that other contractors said would take weeks. Handyman of South Charlotte completed it in just 5 days with exceptional quality! The owner personally supervised the work and made sure everything was perfect. The online booking system was convenient, and they kept me updated throughout the process."
-    },
-    {
-      name: "Jennifer L.",
-      rating: 5,
-      date: "June 15, 2024",
-      text: "Called their AI assistant at 6am when my front door wouldn't close properly. By 2pm the same day, my door was fixed! The handyman was professional, knowledgeable, and charged a fair price. It's so convenient to have a reliable handyman service that you can reach anytime. Will definitely use again for future projects."
-    },
-    {
-      name: "David W.",
-      rating: 4,
-      date: "May 30, 2024",
-      text: "Had them install grab bars in my mother's bathroom. They were careful to place them exactly where needed for safety. The handyman was respectful and patient with my elderly mother's questions. Only reason for 4 stars instead of 5 is they had to reschedule once, but they communicated well about it."
-    }
-  ];
+  const [googleMeta, setGoogleMeta] = React.useState({ name: '', rating: null, user_ratings_total: null });
+  const [googleReviews, setGoogleReviews] = React.useState([]);
+
+  React.useEffect(() => {
+    let mounted = true;
+
+    const loadScriptIfNeeded = () => new Promise((resolve, reject) => {
+      try {
+        if (typeof window !== 'undefined' && window.google && window.google.maps && window.google.maps.places) {
+          resolve();
+          return;
+        }
+        const existing = document.getElementById('google-maps-places-script');
+        if (existing) {
+          existing.addEventListener('load', () => resolve());
+          existing.addEventListener('error', (e) => reject(e));
+          return;
+        }
+        const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+        if (!apiKey) {
+          resolve();
+          return;
+        }
+        const s = document.createElement('script');
+        s.id = 'google-maps-places-script';
+        s.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&libraries=places&v=quarterly`;
+        s.async = true;
+        s.defer = true;
+        s.onload = () => resolve();
+        s.onerror = (e) => reject(e);
+        document.head.appendChild(s);
+      } catch (e) {
+        resolve();
+      }
+    });
+
+    const fetchViaPlaces = async () => {
+      try {
+        await loadScriptIfNeeded();
+        if (!mounted || !window.google || !window.google.maps || !window.google.maps.places) return;
+        const placeId = import.meta.env.VITE_GOOGLE_PLACE_ID;
+        if (!placeId) return;
+        const service = new window.google.maps.places.PlacesService(document.createElement('div'));
+        service.getDetails({ placeId, fields: ['name','rating','user_ratings_total','reviews'] }, (result, status) => {
+          if (!mounted) return;
+          if (status !== window.google.maps.places.PlacesServiceStatus.OK || !result) return;
+          setGoogleMeta({ name: result.name, rating: result.rating, user_ratings_total: result.user_ratings_total });
+          const list = Array.isArray(result.reviews) ? result.reviews.slice(0,5).map(r => ({
+            name: r.author_name || 'Reviewer',
+            rating: r.rating || 5,
+            date: r.relative_time_description || '',
+            text: r.text || '',
+            author_url: r.author_url || '',
+            profile_photo_url: r.profile_photo_url || '',
+          })) : [];
+          setGoogleReviews(list);
+        });
+      } catch (_) {
+        // silent
+      }
+    };
+
+    fetchViaPlaces();
+    return () => { mounted = false; };
+  }, []);
 
   const nextdoorReviews = [
     {
@@ -149,13 +188,13 @@ function Reviews() {
             className="mb-12"
           >
             <div className="flex items-center justify-center space-x-4 mb-8">
-              <img 
-                src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Google_%22G%22_Logo.svg/1200px-Google_%22G%22_Logo.svg.png" 
-                alt="Google" 
-                className="h-8"
-              />
               <h2 className="text-3xl font-bold text-gray-900">Google Reviews</h2>
             </div>
+            {googleMeta?.rating && (
+              <div className="text-center text-gray-700 mb-6">
+                <span className="font-semibold">{googleMeta.rating}</span> / 5.0 · {googleMeta.user_ratings_total} reviews
+              </div>
+            )}
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -178,9 +217,13 @@ function Reviews() {
                   <span className="text-sm text-gray-500">{review.date}</span>
                 </div>
                 <p className="text-gray-700">{review.text}</p>
+                {review.author_url && (
+                  <a href={review.author_url} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline mt-3 inline-block">View on Google</a>
+                )}
               </motion.div>
             ))}
           </div>
+          <p className="text-sm text-gray-500 mt-6 text-center">Powered by Google</p>
         </div>
       </section>
 
@@ -268,7 +311,7 @@ function Reviews() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <a
-                href="/contact"
+                href="contact#/contact"
                 className="bg-bright-green text-white px-8 py-4 rounded-lg font-semibold text-lg hover:bg-green-600 transition-colors inline-flex items-center justify-center"
               >
                 <SafeIcon icon={FiCalendar} className="mr-2 h-5 w-5" />

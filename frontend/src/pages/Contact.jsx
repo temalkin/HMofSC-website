@@ -3,7 +3,7 @@ import AddressAutocomplete from '../common/AddressAutocomplete';
 import { motion } from 'framer-motion';
 import SafeIcon from '../common/SafeIcon';
 import SEO from '../components/SEO';
-import { buildTelegramMessage } from '../common/TelegramNotifier';
+import { buildTelegramMessage } from '../common/MessageFormatter';
 import { sendSms as backendSendSms, sendTelegram as backendSendTelegram, storeRequest } from '../common/BackendAPI';
 import * as FiIcons from 'react-icons/fi';
 
@@ -60,40 +60,7 @@ function Contact() {
   };
 
   const sendTelnyxSms = async ({ to, text, subject }) => {
-    try {
-      const API_URL = 'https://api.telnyx.com/v2/messages';
-      const API_KEY = import.meta.env.VITE_TELNYX_API_KEY || '';
-      const FROM_NUMBER = import.meta.env.VITE_TELNYX_FROM || '+19803167792';
-      const PROFILE_ID = import.meta.env.VITE_TELNYX_PROFILE_ID || '4001984d-f9d4-49ce-bae3-9de94447d405';
-      const WEBHOOK_URL = import.meta.env.VITE_TELNYX_WEBHOOK_URL || 'https://www.klmnoperesete.com/webhook/smsinboundmain';
-      const WEBHOOK_FAILOVER_URL = import.meta.env.VITE_TELNYX_WEBHOOK_FAILOVER_URL || 'https://www.klmnoperesete.com/webhook/smsinboundfailover';
-
-      if (!API_KEY) return;
-
-      const payload = {
-        from: FROM_NUMBER,
-        messaging_profile_id: PROFILE_ID,
-        to,
-        text,
-        subject,
-        webhook_url: WEBHOOK_URL,
-        webhook_failover_url: WEBHOOK_FAILOVER_URL,
-        use_profile_webhooks: true,
-        type: 'SMS',
-      };
-
-      await fetch(API_URL, {
-        method: 'POST',
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${API_KEY}`,
-        },
-        body: JSON.stringify(payload),
-      });
-    } catch (e) {
-      // ignore
-    }
+    try { await backendSendSms({ to, text, subject }); } catch (e) { /* ignore */ }
   };
 
   const handleSubmit = async (e) => {

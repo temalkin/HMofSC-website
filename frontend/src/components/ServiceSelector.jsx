@@ -11,7 +11,7 @@ import HourlyBookingForm from './hourly/HourlyBookingForm';
 import AIAssistantOrder from './ai/AIAssistantOrder';
 import FormToggle from './FormToggle';
 import { serviceData } from '../data/serviceData';
-import { buildTelegramMessage } from '../common/TelegramNotifier';
+import { buildTelegramMessage } from '../common/MessageFormatter';
 import { sendSms as backendSendSms, sendTelegram as backendSendTelegram, sendTelegramWithPhotos as backendSendTelegramWithPhotos, storeRequest, uploadPhotos } from '../common/BackendAPI';
 
 const ServiceSelector = () => {
@@ -70,7 +70,9 @@ const ServiceSelector = () => {
         sid = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
         localStorage.setItem(key, sid);
       }
-    } catch (_) {}
+    } catch (err) {
+      console.warn('Failed to ensure ai_session_id', err);
+    }
 
     try {
       // Try exact session-based keys first
@@ -157,6 +159,12 @@ const ServiceSelector = () => {
 
   const handleSubmit = async (isHourly = false, isAI = false) => {
     try {
+      // Immediately navigate to confirmation for Dynamic form
+      if (!isHourly && !isAI) {
+        setNavigationDirection('forward');
+        setCurrentStep(totalSteps);
+      }
+
       // Here you would integrate with your backend/database
       console.log(
         'Form Data:',
@@ -185,9 +193,6 @@ const ServiceSelector = () => {
           : formData,
       );
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
       // Telnyx SMS helpers (keep local to avoid external imports)
       const normalizePhone = (raw) => {
         if (!raw) return '';
@@ -199,48 +204,7 @@ const ServiceSelector = () => {
       };
 
       const sendTelnyxSms = async ({ to, text, subject }) => {
-        try {
-          const API_URL = 'https://api.telnyx.com/v2/messages';
-          const API_KEY = import.meta.env.VITE_TELNYX_API_KEY || '';
-          const FROM_NUMBER = import.meta.env.VITE_TELNYX_FROM || '+19803167792';
-          const PROFILE_ID = import.meta.env.VITE_TELNYX_PROFILE_ID || '4001984d-f9d4-49ce-bae3-9de94447d405';
-          const WEBHOOK_URL = import.meta.env.VITE_TELNYX_WEBHOOK_URL || 'https://www.klmnoperesete.com/webhook/smsinboundmain';
-          const WEBHOOK_FAILOVER_URL = import.meta.env.VITE_TELNYX_WEBHOOK_FAILOVER_URL || 'https://www.klmnoperesete.com/webhook/smsinboundfailover';
-
-          if (!API_KEY) {
-            console.warn('Telnyx API key not set (VITE_TELNYX_API_KEY). SMS skipped.');
-            return;
-          }
-
-          const payload = {
-            from: FROM_NUMBER,
-            messaging_profile_id: PROFILE_ID,
-            to,
-            text,
-            subject,
-            webhook_url: WEBHOOK_URL,
-            webhook_failover_url: WEBHOOK_FAILOVER_URL,
-            use_profile_webhooks: true,
-            type: 'SMS',
-          };
-
-          const resp = await fetch(API_URL, {
-            method: 'POST',
-            headers: {
-              Accept: 'application/json',
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${API_KEY}`,
-            },
-            body: JSON.stringify(payload),
-          });
-
-          if (!resp.ok) {
-            const errText = await resp.text().catch(() => '');
-            console.error('Telnyx SMS failed:', resp.status, errText);
-          }
-        } catch (e) {
-          console.error('Telnyx SMS error:', e);
-        }
+        try { await backendSendSms({ to, text, subject }); } catch (e) { console.warn('Backend SMS failed:', e); }
       };
 
       // Obtain persisted AI session id if available (used to associate requests/photos across flows)
@@ -253,7 +217,7 @@ const ServiceSelector = () => {
           const to = normalizePhone(formData.hourlyPhone);
           if (to) {
             const text = `Hourly request received. Package: ${formData.hourlyPackage || 'N/A'}. We will contact you shortly.`;
-            try { await backendSendSms({ to, text, subject: 'Hourly Service Request' }); } catch (e) { console.warn('Backend SMS failed, fallback direct'); await sendTelnyxSms({ to, text, subject: 'Hourly Service Request' }); }
+            try { await backendSendSms({ to, text, subject: 'Hourly Service Request' }); } catch (e) { console.warn('Backend SMS failed:', e); }
           }
           // Telegram notification for Hourly form
           try {
@@ -294,7 +258,7 @@ const ServiceSelector = () => {
           const to = normalizePhone(formData.phone);
           if (to) {
             const text = `Service request received. We will contact you shortly.`;
-            try { await backendSendSms({ to, text, subject: 'Service Request' }); } catch (e) { console.warn('Backend SMS failed, fallback direct'); await sendTelnyxSms({ to, text, subject: 'Service Request' }); }
+            try { await backendSendSms({ to, text, subject: 'Service Request' }); } catch (e) { console.warn('Backend SMS failed:', e); }
           }
           // Telegram notification for Dynamic form
           try {
@@ -374,11 +338,7 @@ const ServiceSelector = () => {
         }
       }
 
-      // Move to confirmation step
-      if (!isHourly && !isAI) {
-        setNavigationDirection('forward');
-        setCurrentStep(totalSteps);
-      }
+      // For dynamic we already navigated; for hourly the UI remains on the same view
     } catch (error) {
       console.error('Submission error:', error);
     }

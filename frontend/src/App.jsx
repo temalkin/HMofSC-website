@@ -13,6 +13,8 @@ import Gallery from './pages/Gallery';
 import Reviews from './pages/Reviews';
 import AIAssistant from './pages/AIAssistant';
 import Calculator from './pages/Calculator';
+import Privacy from './pages/Privacy';
+import Terms from './pages/Terms';
 
 // Individual Service Pages
 import FurnitureAssembly from './pages/services/FurnitureAssembly';
@@ -47,6 +49,8 @@ function App() {
               <Route path="/reviews" element={<Reviews />} />
               <Route path="/ai-assistant" element={<AIAssistant />} />
               <Route path="/calculator" element={<Calculator />} />
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/terms" element={<Terms />} />
 
               {/* Service Pages */}
               <Route path="/services/furniture-assembly" element={<FurnitureAssembly />} />

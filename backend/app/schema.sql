@@ -48,7 +48,8 @@ create table if not exists public.ai_messages (
   session_id text,
   sender text not null,
   content text,
-  photos_count int default 0
+  photos_count int default 0,
+  storage_paths jsonb
 );
 
 create index if not exists idx_ai_messages_request_id on public.ai_messages (request_id, created_at);
@@ -58,10 +59,12 @@ create table if not exists public.ai_jobs (
   request_id uuid not null references public.requests(id) on delete cascade,
   job_id text,
   name text,
-  price numeric
+  price numeric,
+  session_id text
 );
 
 create index if not exists idx_ai_jobs_request_id on public.ai_jobs (request_id);
+create index if not exists idx_ai_jobs_session_id on public.ai_jobs (session_id);
 
 create table if not exists public.request_photos (
   id bigserial primary key,

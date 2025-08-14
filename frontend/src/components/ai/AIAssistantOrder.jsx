@@ -3,8 +3,8 @@ import { motion } from 'framer-motion';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../../common/SafeIcon';
 import AddressAutocomplete from '../../common/AddressAutocomplete';
-import { buildTelegramMessage } from '../../common/TelegramNotifier';
-import { sendSms as backendSendSms, sendTelegram as backendSendTelegram, sendTelegramWithPhotos as backendSendTelegramWithPhotos, sendTelegramDocument as backendSendTelegramDocument, storeRequest, uploadPhotos } from '../../common/BackendAPI';
+import { buildTelegramMessage } from '../../common/MessageFormatter';
+import { sendSms as backendSendSms, sendTelegram as backendSendTelegram, sendTelegramWithPhotos as backendSendTelegramWithPhotos, sendTelegramDocument as backendSendTelegramDocument, storeRequest, uploadPhotos, aiEnsureRequest, aiIngestMessage } from '../../common/BackendAPI';
 
 const { 
   FiSend, FiUpload, FiX, FiMapPin, FiUser, 
@@ -40,48 +40,7 @@ const AIAssistantOrder = ({ formData, onDataChange, onSubmit }) => {
   };
 
   const sendTelnyxSms = async ({ to, text, subject }) => {
-    try {
-      const API_URL = 'https://api.telnyx.com/v2/messages';
-      const API_KEY = import.meta.env.VITE_TELNYX_API_KEY || '';
-      const FROM_NUMBER = import.meta.env.VITE_TELNYX_FROM || '+19803167792';
-      const PROFILE_ID = import.meta.env.VITE_TELNYX_PROFILE_ID || '4001984d-f9d4-49ce-bae3-9de94447d405';
-      const WEBHOOK_URL = import.meta.env.VITE_TELNYX_WEBHOOK_URL || 'https://www.klmnoperesete.com/webhook/smsinboundmain';
-      const WEBHOOK_FAILOVER_URL = import.meta.env.VITE_TELNYX_WEBHOOK_FAILOVER_URL || 'https://www.klmnoperesete.com/webhook/smsinboundfailover';
-
-      if (!API_KEY) {
-        console.warn('Telnyx API key not set (VITE_TELNYX_API_KEY). SMS skipped.');
-        return;
-      }
-
-      const payload = {
-        from: FROM_NUMBER,
-        messaging_profile_id: PROFILE_ID,
-        to,
-        text,
-        subject,
-        webhook_url: WEBHOOK_URL,
-        webhook_failover_url: WEBHOOK_FAILOVER_URL,
-        use_profile_webhooks: true,
-        type: 'SMS',
-      };
-
-      const resp = await fetch(API_URL, {
-        method: 'POST',
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${API_KEY}`,
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!resp.ok) {
-        const errText = await resp.text().catch(() => '');
-        console.error('Telnyx SMS failed:', resp.status, errText);
-      }
-    } catch (e) {
-      console.error('Telnyx SMS error:', e);
-    }
+    try { await backendSendSms({ to, text, subject }); } catch (e) { console.warn('Backend SMS failed:', e); }
   };
 
   const handleResetDialogue = () => {
@@ -231,73 +190,26 @@ const AIAssistantOrder = ({ formData, onDataChange, onSubmit }) => {
     }
   };
 
-  
-
-  const addJobsFromWebhook = (webhookData) => {
-    if (!webhookData || !webhookData.job) return;
-
-    const { job } = webhookData;
-    const type = String(job.type || '').toLowerCase();
-    const id = job.id;
-    const name = typeof job.name === 'string' ? job.name.trim() : '';
-    const price = Number(job.price);
-
-    const existing = Array.isArray(formData.aiJobs) ? [...formData.aiJobs] : [];
-    const idxById = (targetId) => existing.findIndex((j) => j.id === targetId);
-
-    if (type === 'create') {
-      // If backend didn't provide id, generate a stable one client-side
-      const safeId = id && String(id).trim() !== '' ? id : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-      if (!name || Number.isNaN(price) || price === 0) return;
-      const idx = idxById(safeId);
-      const newJob = { id: safeId, name, price };
-      if (idx >= 0) existing[idx] = newJob; else existing.push(newJob);
-      onDataChange('aiJobs', existing);
-      // Send SMS to contact phone if present
-      const toPhone = normalizePhone(formData.aiPhone);
-      if (toPhone) {
-        const text = `New request created: ${name} — $${price}. We will contact you shortly.`;
-        const subject = 'New Service Request';
-        sendTelnyxSms({ to: toPhone, text, subject });
-      }
-      return;
-    }
-
-    if (type === 'update') {
-      if (!id) return;
-      const idx = idxById(id);
-      if (idx < 0) return;
-      const updated = { ...existing[idx] };
-      if (name) updated.name = name;
-      if (!Number.isNaN(price)) updated.price = price;
-      // If price becomes 0 on update, remove the job
-      if (updated.price === 0) {
-        onDataChange('aiJobs', existing.filter((j) => j.id !== id));
-        return;
-      }
-      existing[idx] = updated;
-      onDataChange('aiJobs', existing);
-      return;
-    }
-
-    if (type === 'delete' || type === 'deleted') {
-      if (!id) return;
-      const filtered = existing.filter((j) => j.id !== id);
-      onDataChange('aiJobs', filtered);
-      return;
+  const removeCurrentPhotoAt = (idx) => {
+    try {
+      const list = Array.isArray(formData.aiPhotos) ? [...formData.aiPhotos] : [];
+      if (idx < 0 || idx >= list.length) return;
+      // Revoke object URL if we created one
+      try { if (list[idx] && list[idx].url && list[idx].url.startsWith('blob:')) URL.revokeObjectURL(list[idx].url); } catch (_) {}
+      list.splice(idx, 1);
+      onDataChange('aiPhotos', list);
+    } catch (err) {
+      // ignore
     }
   };
 
-  const WEBHOOK_URL = 'https://www.klmnoperesete.com/webhook/website_ai_helper';
-
-  // Upload a single file to a temporary host and return a public URL
+  // Upload a single file to a temporary host and return a public URL (unused here but kept)
   const uploadFileAndGetUrl = async (file) => {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 30000);
     try {
       const fd = new FormData();
       fd.append('file', file);
-      // Using file.io for temporary hosting of uploads
       const res = await fetch('https://file.io', { method: 'POST', body: fd, signal: controller.signal });
       const json = await res.json().catch(() => null);
       if (res.ok && json && (json.link || json.url)) {
@@ -318,11 +230,12 @@ const AIAssistantOrder = ({ formData, onDataChange, onSubmit }) => {
       reader.readAsDataURL(file);
     });
 
+  const WEBHOOK_URL = 'https://www.klmnoperesete.com/webhook/website_ai_helper';
+
   const sendToWebhook = async (payload, { timeoutMs = 15000 } = {}) => {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
     
-    // Добавляем логирование
     console.log('Sending to webhook:', { url: WEBHOOK_URL, payload });
     
     try {
@@ -336,7 +249,6 @@ const AIAssistantOrder = ({ formData, onDataChange, onSubmit }) => {
         signal: controller.signal,
       });
 
-      // Логируем статус ответа
       console.log('Webhook response status:', response.status, response.statusText);
       console.log('Webhook response headers:', Object.fromEntries(response.headers.entries()));
 
@@ -369,22 +281,39 @@ const AIAssistantOrder = ({ formData, onDataChange, onSubmit }) => {
     const hasPhotos = Array.isArray(formData.aiPhotos) && formData.aiPhotos.length > 0;
     if (!userMessage.trim() && !hasPhotos) return;
 
-    // Preserve current photos for webhook before clearing preview list
     const photosToSend = hasPhotos ? [...formData.aiPhotos] : [];
 
-    // Add user message to chat (include photos preview if any)
+    // Add user message to chat immediately
     const updatedMessages = [
       ...formData.aiMessages,
       { sender: 'user', content: userMessage.trim(), photos: hasPhotos ? photosToSend : undefined }
     ];
     onDataChange('aiMessages', updatedMessages);
-    setUserMessage('');
-    if (hasPhotos) {
-      onDataChange('aiPhotos', []);
-    }
 
-    // Call webhook and show typing indicator
+    // Clear UI immediately
+    setUserMessage('');
+    if (hasPhotos) onDataChange('aiPhotos', []);
     setIsTyping(true);
+
+    // Fire-and-forget realtime persistence (ensure request, upload photos, save message)
+    (async () => {
+      try {
+        let storagePaths = [];
+        if (hasPhotos) {
+          try {
+            const ensure = await aiEnsureRequest({ sessionId: sessionIdRef.current });
+            const requestId = ensure?.request_id || ensure?.requestId;
+            if (requestId) {
+              const up = await uploadPhotos({ requestId, origin: 'ai-message', files: photosToSend, sessionId: sessionIdRef.current });
+              const items = (up && Array.isArray(up.items)) ? up.items : [];
+              storagePaths = items.map((it) => it?.storage_path).filter(Boolean);
+            }
+          } catch (_) {}
+        }
+        try { await aiIngestMessage({ sessionId: sessionIdRef.current, sender: 'user', content: userMessage.trim(), photosCount: hasPhotos ? photosToSend.length : 0, storagePaths }); } catch (_) {}
+      } catch (_) {}
+    })();
+
     try {
       // Important: do NOT include the current outgoing message in history
       const priorMessages = formData.aiMessages;
@@ -497,8 +426,7 @@ const AIAssistantOrder = ({ formData, onDataChange, onSubmit }) => {
       ];
       onDataChange('aiMessages', updatedMessagesWithAI);
 
-      // Add/update/delete job if provided
-      addJobsFromWebhook(normalized);
+      try { await aiIngestMessage({ sessionId: sessionIdRef.current, sender: 'ai', content: replyMessage, photosCount: 0 }); } catch (_) {}
     } catch (error) {
       const updatedMessagesWithAI = [
         ...updatedMessages,
@@ -519,6 +447,58 @@ const AIAssistantOrder = ({ formData, onDataChange, onSubmit }) => {
     }
   };
 
+  const addJobsFromWebhook = (webhookData) => {
+    if (!webhookData || !webhookData.job) return;
+
+    const { job } = webhookData;
+    const type = String(job.type || '').toLowerCase();
+    const id = job.id;
+    const name = typeof job.name === 'string' ? job.name.trim() : '';
+    const price = Number(job.price);
+
+    const existing = Array.isArray(formData.aiJobs) ? [...formData.aiJobs] : [];
+    const idxById = (targetId) => existing.findIndex((j) => j.id === targetId);
+
+    if (type === 'create') {
+      const safeId = id && String(id).trim() !== '' ? id : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      if (!name || Number.isNaN(price) || price === 0) return;
+      const idx = idxById(safeId);
+      const newJob = { id: safeId, name, price };
+      if (idx >= 0) existing[idx] = newJob; else existing.push(newJob);
+      onDataChange('aiJobs', existing);
+      const toPhone = normalizePhone(formData.aiPhone);
+      if (toPhone) {
+        const text = `New request created: ${name} — $${price}. We will contact you shortly.`;
+        const subject = 'New Service Request';
+        try { backendSendSms({ to: toPhone, text, subject }).catch(() => {}); } catch (_) {}
+      }
+      return;
+    }
+
+    if (type === 'update') {
+      if (!id) return;
+      const idx = idxById(id);
+      if (idx < 0) return;
+      const updated = { ...existing[idx] };
+      if (name) updated.name = name;
+      if (!Number.isNaN(price)) updated.price = price;
+      if (updated.price === 0) {
+        onDataChange('aiJobs', existing.filter((j) => j.id !== id));
+        return;
+      }
+      existing[idx] = updated;
+      onDataChange('aiJobs', existing);
+      return;
+    }
+
+    if (type === 'delete' || type === 'deleted') {
+      if (!id) return;
+      const filtered = existing.filter((j) => j.id !== id);
+      onDataChange('aiJobs', filtered);
+      return;
+    }
+  };
+
   const handleFileUpload = (e) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -533,15 +513,11 @@ const AIAssistantOrder = ({ formData, onDataChange, onSubmit }) => {
     }));
     
     onDataChange('aiPhotos', [...(formData.aiPhotos || []), ...fileObjects].slice(0, 10));
-    // Reset the file input so user can attach the same file again if needed
     try {
       if (fileInputRef.current) fileInputRef.current.value = '';
     } catch (err) {
       // ignore
     }
-    
-    // Убираем автоматические сообщения о загрузке фото
-    // Теперь пользователь сам решит, когда упомянуть о фото в чате
   };
 
   const handleSubmit = async () => {
@@ -552,13 +528,12 @@ const AIAssistantOrder = ({ formData, onDataChange, onSubmit }) => {
       if (toPhone) {
         const text = `We received your AI-assisted request. Thank you, ${formData.aiFullName || 'customer'}! We will contact you shortly.`;
         const subject = 'AI Assistant Request';
-        try { await backendSendSms({ to: toPhone, text, subject }); } catch (e) { console.warn('Backend SMS failed, fallback direct'); await sendTelnyxSms({ to: toPhone, text, subject }); }
+        try { await backendSendSms({ to: toPhone, text, subject }); } catch (e) { console.warn('Backend SMS failed:', e); }
       }
     } catch (err) {
       console.warn('Chat persist failed:', err);
     }
 
-    // Telegram notification for AI form submit
     try {
       const jobs = Array.isArray(formData.aiJobs) ? formData.aiJobs.map(j => `${j.name} - $${j.price}`) : [];
       const tg = buildTelegramMessage('New AI Assistant Submission', {
@@ -576,7 +551,6 @@ const AIAssistantOrder = ({ formData, onDataChange, onSubmit }) => {
         Source: 'ServiceSelector: AI Assistant',
       });
       try { await backendSendTelegram(tg); } catch (err) { console.warn('Backend telegram text failed:', err); }
-      // Send all photos user sent during chat history
       try {
         const allPhotos = [];
         if (Array.isArray(formData.aiMessages)) {
@@ -586,7 +560,6 @@ const AIAssistantOrder = ({ formData, onDataChange, onSubmit }) => {
             }
           });
         }
-        // Also include currently attached photos list just in case
         if (Array.isArray(formData.aiPhotos)) {
           allPhotos.push(...formData.aiPhotos);
         }
@@ -597,7 +570,6 @@ const AIAssistantOrder = ({ formData, onDataChange, onSubmit }) => {
         console.warn('Telegram media group (AI all photos) failed:', err);
       }
 
-      // Send full dialog as txt
       try {
         if (Array.isArray(formData.aiMessages) && formData.aiMessages.length > 0) {
           const lines = formData.aiMessages.map((m) => {
@@ -616,7 +588,6 @@ const AIAssistantOrder = ({ formData, onDataChange, onSubmit }) => {
         console.warn('Telegram dialog send failed:', err);
       }
 
-      // Store in Supabase
       try {
         const stored = await storeRequest({
           source: 'website',
@@ -641,8 +612,25 @@ const AIAssistantOrder = ({ formData, onDataChange, onSubmit }) => {
           })(),
         });
         const requestId = stored && stored.request_id;
-        if (requestId && Array.isArray(formData.aiPhotos) && formData.aiPhotos.length > 0) {
-          try { await uploadPhotos({ requestId, origin: 'ai-current', files: formData.aiPhotos, sessionId: sessionIdRef.current }); } catch (e) { console.warn('uploadPhotos failed (ai-current):', e); }
+        if (requestId) {
+          // Upload all conversation photos (from messages history) to storage
+          try {
+            const allPhotos = [];
+            if (Array.isArray(formData.aiMessages)) {
+              formData.aiMessages.forEach((m) => {
+                if (m && m.sender === 'user' && Array.isArray(m.photos) && m.photos.length > 0) {
+                  m.photos.forEach((p) => allPhotos.push(p));
+                }
+              });
+            }
+            if (allPhotos.length > 0) {
+              await uploadPhotos({ requestId, origin: 'ai-message', files: allPhotos, sessionId: sessionIdRef.current });
+            }
+          } catch (e) { console.warn('uploadPhotos failed (ai-message):', e); }
+          // Upload currently attached photos list (already in state) to storage
+          if (Array.isArray(formData.aiPhotos) && formData.aiPhotos.length > 0) {
+            try { await uploadPhotos({ requestId, origin: 'ai-current', files: formData.aiPhotos, sessionId: sessionIdRef.current }); } catch (e) { console.warn('uploadPhotos failed (ai-current):', e); }
+          }
         }
       } catch (e) { console.warn('storeRequest failed (ai):', e); }
     } catch (err) {
@@ -855,7 +843,7 @@ const AIAssistantOrder = ({ formData, onDataChange, onSubmit }) => {
                     }
                   }}
               />
-              <label htmlFor="ai-photo-upload" className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 cursor-pointer hover:text-gray-600">
+              <label htmlFor="ai-photo-upload" className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 cursor-pointer hover:text-gray-600" title="Attach photos">
                 <SafeIcon icon={FiUpload} className="w-5 h-5" />
               </label>
               <input
@@ -878,8 +866,8 @@ const AIAssistantOrder = ({ formData, onDataChange, onSubmit }) => {
             </motion.button>
           </div>
           
-          {/* Photo Preview */}
-          {formData.aiPhotos?.length > 0 && (
+          {/* Photo Preview (current attachments) */}
+          {Array.isArray(formData.aiPhotos) && formData.aiPhotos.length > 0 && (
             <div className="flex overflow-x-auto space-x-2 mt-2 pb-2">
               {formData.aiPhotos.map((photo, index) => (
                 <div key={index} className="relative flex-shrink-0">
@@ -888,6 +876,15 @@ const AIAssistantOrder = ({ formData, onDataChange, onSubmit }) => {
                     alt={photo.name}
                     className="h-16 w-16 object-cover rounded-lg"
                   />
+                  <button
+                    type="button"
+                    onClick={() => removeCurrentPhotoAt(index)}
+                    className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full p-1 shadow hover:bg-red-700"
+                    aria-label="Remove photo"
+                    title="Remove photo"
+                  >
+                    <SafeIcon icon={FiX} className="w-3 h-3" />
+                  </button>
                 </div>
               ))}
             </div>

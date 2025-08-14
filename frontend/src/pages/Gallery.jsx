@@ -219,7 +219,7 @@ function Gallery() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <a
-                href="/contact"
+                href="contact#/contact"
                 className="bg-bright-green text-white px-8 py-4 rounded-lg font-semibold text-lg hover:bg-green-600 transition-colors inline-flex items-center justify-center"
               >
                 <SafeIcon icon={FiCalendar} className="mr-2 h-5 w-5" />
