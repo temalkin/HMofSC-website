@@ -13,12 +13,16 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     port: 5173,
+    allowedHosts: ['hmofscsitenew-production.up.railway.app'],
     proxy: {
       '/api': {
         target: 'http://backend:8080',
         changeOrigin: true,
       },
     },
+  },
+  preview: {
+    allowedHosts: ['hmofscsitenew-production.up.railway.app'],
   },
    build: {
     outDir: 'dist',
