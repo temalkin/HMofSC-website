@@ -1,5 +1,5 @@
 import React from 'react';
-import { HashRouter as Router, Routes, Route } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -15,6 +15,14 @@ import AIAssistant from './pages/AIAssistant';
 import Calculator from './pages/Calculator';
 import Privacy from './pages/Privacy';
 import Terms from './pages/Terms';
+
+function ScrollToTop() {
+  const location = useLocation();
+  React.useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+  }, [location.pathname, location.hash, location.key]);
+  return null;
+}
 
 // Individual Service Pages
 import FurnitureAssembly from './pages/services/FurnitureAssembly';
@@ -35,6 +43,7 @@ function App() {
   return (
     <HelmetProvider>
       <Router>
+        <ScrollToTop />
         <div className="min-h-screen bg-gray-50 font-sf">
           <Header />
           <main>
