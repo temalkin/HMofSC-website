@@ -27,12 +27,13 @@ function Home() {
   ];
 
   const services = [
-    { name: 'Furniture Assembly', icon: FiHome },
-    { name: 'Drywall Repair', icon: FiTool },
-    { name: 'TV Mount Installation', icon: FiMonitor },
-    { name: 'Pressure Washing', icon: FiSettings },
-    { name: 'Gutter Cleaning', icon: FiHome },
-    { name: 'Kitchen Remodeling', icon: FiTool }
+    { name: 'Furniture Assembly', icon: FiHome, href: '/services/furniture-assembly' },
+    { name: 'Drywall Repair', icon: FiTool, href: '/services/drywall-installation-repair' },
+    { name: 'TV Mount Installation', icon: FiMonitor, href: '/services/tv-mount-installation' },
+    { name: 'Pressure Washing', icon: FiSettings, href: '/services/pressure-washing' },
+    // No dedicated pages found for these two; direct to Services overview for now
+    { name: 'Gutter Cleaning', icon: FiHome, href: '/services' },
+    { name: 'Kitchen Remodeling', icon: FiTool, href: '/services' }
   ];
 
   const schema = {
@@ -238,13 +239,17 @@ function Home() {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
                 viewport={{ once: true }}
-                className="bg-gray-50 rounded-lg p-4 text-center hover:bg-bright-green hover:text-white transition-colors group"
               >
-                <SafeIcon
-                  icon={service.icon}
-                  className="h-8 w-8 mx-auto mb-2 text-bright-green group-hover:text-white"
-                />
-                <p className="font-medium text-sm">{service.name}</p>
+                <Link
+                  to={service.href}
+                  className="block bg-gray-50 rounded-lg p-4 text-center hover:bg-bright-green hover:text-white transition-colors group"
+                >
+                  <SafeIcon
+                    icon={service.icon}
+                    className="h-8 w-8 mx-auto mb-2 text-bright-green group-hover:text-white"
+                  />
+                  <p className="font-medium text-sm">{service.name}</p>
+                </Link>
               </motion.div>
             ))}
           </div>
