@@ -70,7 +70,7 @@ function Contact() {
     setFormSubmitted(true);
     const to = normalizePhone(formData.phone);
     if (to) {
-      const text = `We received your request. Name: ${formData.name}. We will contact you shortly.`;
+      const text = `Reply YES to confirm, STOP if this isn’t for you. We got your request — will contact you soon.`;
       try { await backendSendSms({ to, text, subject: 'Contact Request' }); } catch (e) { console.warn('Backend SMS failed, fallback direct'); await sendTelnyxSms({ to, text, subject: 'Contact Request' }); }
     }
     // Store in Supabase via backend

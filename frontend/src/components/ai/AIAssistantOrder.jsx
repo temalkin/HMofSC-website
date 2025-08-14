@@ -526,7 +526,7 @@ const AIAssistantOrder = ({ formData, onDataChange, onSubmit }) => {
     try {
       const toPhone = normalizePhone(formData.aiPhone);
       if (toPhone) {
-        const text = `We received your AI-assisted request. Thank you, ${formData.aiFullName || 'customer'}! We will contact you shortly.`;
+        const text = `Reply YES to confirm, STOP if this isn’t for you. We got your request — will contact you soon.`;
         const subject = 'AI Assistant Request';
         try { await backendSendSms({ to: toPhone, text, subject }); } catch (e) { console.warn('Backend SMS failed:', e); }
       }

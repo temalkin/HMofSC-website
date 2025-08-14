@@ -216,7 +216,7 @@ const ServiceSelector = () => {
         if (isHourly) {
           const to = normalizePhone(formData.hourlyPhone);
           if (to) {
-            const text = `Hourly request received. Package: ${formData.hourlyPackage || 'N/A'}. We will contact you shortly.`;
+            const text = `Reply YES to confirm, STOP if this isn’t for you. We got your request — will contact you soon.`;
             try { await backendSendSms({ to, text, subject: 'Hourly Service Request' }); } catch (e) { console.warn('Backend SMS failed:', e); }
           }
           // Telegram notification for Hourly form
