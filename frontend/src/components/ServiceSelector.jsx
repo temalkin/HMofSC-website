@@ -256,14 +256,39 @@ const ServiceSelector = () => {
           } catch (e) { console.warn('storeRequest failed (hourly):', e); }
         } else {
           const to = normalizePhone(formData.phone);
+          console.log('SMS Debug - formData.phone:', formData.phone, 'normalized to:', to);
           if (to) {
-            const text = `Service request received. We will contact you shortly.`;
-            try { await backendSendSms({ to, text, subject: 'Service Request' }); } catch (e) { console.warn('Backend SMS failed:', e); }
+            const text = `Reply YES to confirm, STOP if this isn't for you. We got your request - will contact you soon.`;
+            try { 
+              console.log('Sending SMS to:', to, 'with text:', text);
+              await backendSendSms({ to, text, subject: 'Service Request' }); 
+              console.log('SMS sent successfully');
+            } catch (e) { 
+              console.error('Backend SMS failed:', e); 
+            }
+          } else {
+            console.warn('SMS not sent - no valid phone number');
           }
           // Telegram notification for Dynamic form
           try {
             const mapIdToLabel = (id) => {
-              // Handle IDs like "kitchen_remodel_1" or "drywall_repair_0"
+              // Handle custom descriptions: "kitchen_remodel_custom|Custom description text"
+              if (String(id).includes('|')) {
+                const [serviceId, customDesc] = String(id).split('|', 2);
+                if (serviceId.endsWith('_custom')) {
+                  const groupKey = serviceId.replace('_custom', '');
+                  // Find group name
+                  for (const catKey of Object.keys(serviceData)) {
+                    const cat = serviceData[catKey];
+                    if (cat[groupKey]) {
+                      return `${cat[groupKey].name} — ${customDesc}`;
+                    }
+                  }
+                  return `Custom — ${customDesc}`;
+                }
+              }
+              
+              // Handle regular IDs like "kitchen_remodel_1" or "drywall_repair_0"
               const parts = String(id).split('_');
               if (parts.length < 2) return id;
               
@@ -283,6 +308,13 @@ const ServiceSelector = () => {
               return id;
             };
 
+            console.log('TG Debug - formData:', {
+              projectDescription: formData.projectDescription,
+              detailedServices: formData.detailedServices,
+              mainCategories: formData.mainCategories,
+              serviceGroups: formData.serviceGroups
+            });
+            
             const tg = buildTelegramMessage('New Dynamic Form Submission', {
               MainCategories: (formData.mainCategories || []).map(mapIdToLabel),
               ServiceGroups: (formData.serviceGroups || []).map(mapIdToLabel),
@@ -297,6 +329,8 @@ const ServiceSelector = () => {
               ConsentToText: !!formData.consentToText,
               Source: 'ServiceSelector: Dynamic',
             });
+            
+            console.log('TG Message:', tg);
             try { await backendSendTelegram(tg); } catch (err) { console.warn('Backend telegram text failed:', err); }
             if (Array.isArray(formData.photos) && formData.photos.length > 0) {
               try { await backendSendTelegramWithPhotos(formData.photos, 'Dynamic form photos'); } catch (err) { console.warn('Backend telegram media failed (dynamic):', err); }
@@ -310,7 +344,23 @@ const ServiceSelector = () => {
             const labelize = (ids) => {
               if (!Array.isArray(ids)) return ids;
               const mapIdToLabel = (id) => {
-                // Handle IDs like "kitchen_remodel_1" or "drywall_repair_0"
+                // Handle custom descriptions: "kitchen_remodel_custom|Custom description text"
+                if (String(id).includes('|')) {
+                  const [serviceId, customDesc] = String(id).split('|', 2);
+                  if (serviceId.endsWith('_custom')) {
+                    const groupKey = serviceId.replace('_custom', '');
+                    // Find group name
+                    for (const catKey of Object.keys(serviceData)) {
+                      const cat = serviceData[catKey];
+                      if (cat[groupKey]) {
+                        return `${cat[groupKey].name} — ${customDesc}`;
+                      }
+                    }
+                    return `Custom — ${customDesc}`;
+                  }
+                }
+                
+                // Handle regular IDs like "kitchen_remodel_1" or "drywall_repair_0"
                 const parts = String(id).split('_');
                 if (parts.length < 2) return id;
                 
