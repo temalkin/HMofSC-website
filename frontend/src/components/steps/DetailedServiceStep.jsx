@@ -25,6 +25,14 @@ const DetailedServiceStep = ({
       ? selectedServices.filter(s => !s.startsWith(serviceId))
       : [...selectedServices.filter(s => !s.startsWith(serviceId)), serviceWithDescription];
     
+    console.log('toggleService:', {
+      serviceId,
+      customDescription,
+      serviceWithDescription,
+      oldSelection: selectedServices,
+      newSelection
+    });
+    
     onServicesChange(newSelection);
   };
 
@@ -37,7 +45,10 @@ const DetailedServiceStep = ({
 
   const addCustomService = (groupId) => {
     const description = customDescriptions[groupId];
+    console.log('Adding custom service:', groupId, 'description:', description);
     if (description && description.trim()) {
+      const customServiceId = `${groupId}_custom|${description.trim()}`;
+      console.log('Custom service ID created:', customServiceId);
       toggleService(`${groupId}_custom`, description.trim());
       setCustomDescriptions(prev => ({
         ...prev,
