@@ -263,16 +263,21 @@ const ServiceSelector = () => {
           // Telegram notification for Dynamic form
           try {
             const mapIdToLabel = (id) => {
-              const [group, idxStr] = String(id).split('_');
+              // Handle IDs like "kitchen_remodel_1" or "drywall_repair_0"
+              const parts = String(id).split('_');
+              if (parts.length < 2) return id;
+              
+              // Get the last part as index, join the rest as group key
+              const idxStr = parts[parts.length - 1];
+              const groupKey = parts.slice(0, -1).join('_');
+              
               for (const catKey of Object.keys(serviceData)) {
                 const cat = serviceData[catKey];
-                for (const groupKey of Object.keys(cat)) {
-                  if (groupKey === group) {
-                    const optIdx = Number(idxStr);
-                    const name = cat[groupKey].name;
-                    const option = Array.isArray(cat[groupKey].options) ? cat[groupKey].options[optIdx] : undefined;
-                    return option ? `${name} — ${option}` : name || id;
-                  }
+                if (cat[groupKey]) {
+                  const optIdx = Number(idxStr);
+                  const name = cat[groupKey].name;
+                  const option = Array.isArray(cat[groupKey].options) ? cat[groupKey].options[optIdx] : undefined;
+                  return option ? `${name} — ${option}` : name || id;
                 }
               }
               return id;
@@ -305,16 +310,21 @@ const ServiceSelector = () => {
             const labelize = (ids) => {
               if (!Array.isArray(ids)) return ids;
               const mapIdToLabel = (id) => {
-                const [group, idxStr] = String(id).split('_');
+                // Handle IDs like "kitchen_remodel_1" or "drywall_repair_0"
+                const parts = String(id).split('_');
+                if (parts.length < 2) return id;
+                
+                // Get the last part as index, join the rest as group key
+                const idxStr = parts[parts.length - 1];
+                const groupKey = parts.slice(0, -1).join('_');
+                
                 for (const catKey of Object.keys(serviceData)) {
                   const cat = serviceData[catKey];
-                  for (const groupKey of Object.keys(cat)) {
-                    if (groupKey === group) {
-                      const optIdx = Number(idxStr);
-                      const name = cat[groupKey].name;
-                      const option = Array.isArray(cat[groupKey].options) ? cat[groupKey].options[optIdx] : undefined;
-                      return option ? `${name} — ${option}` : name || id;
-                    }
+                  if (cat[groupKey]) {
+                    const optIdx = Number(idxStr);
+                    const name = cat[groupKey].name;
+                    const option = Array.isArray(cat[groupKey].options) ? cat[groupKey].options[optIdx] : undefined;
+                    return option ? `${name} — ${option}` : name || id;
                   }
                 }
                 return id;
