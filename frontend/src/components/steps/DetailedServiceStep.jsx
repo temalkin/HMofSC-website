@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../../common/SafeIcon';
 
-const { FiArrowLeft, FiArrowRight, FiCheck, FiEdit3 } = FiIcons;
+const { FiArrowLeft, FiArrowRight, FiCheck, FiEdit3, FiX } = FiIcons;
 
 const DetailedServiceStep = ({ 
   serviceGroups, 
@@ -80,6 +80,26 @@ const DetailedServiceStep = ({
 
   const isServiceSelected = (serviceId) => {
     return selectedServices.some(s => s.startsWith(serviceId));
+  };
+
+  // Get custom services for display
+  const getCustomServices = () => {
+    return selectedServices
+      .filter(service => service.includes('|') && service.includes('_custom'))
+      .map(service => {
+        const [serviceId, description] = service.split('|', 2);
+        const groupId = serviceId.replace('_custom', '');
+        return {
+          id: service,
+          groupId,
+          description
+        };
+      });
+  };
+
+  const removeCustomService = (serviceId) => {
+    const newSelection = selectedServices.filter(s => s !== serviceId);
+    onServicesChange(newSelection);
   };
 
   const canProceed = selectedServices.length > 0;
@@ -205,6 +225,37 @@ const DetailedServiceStep = ({
           </motion.div>
         );
       })}
+
+      {/* Display Added Custom Services */}
+      {getCustomServices().length > 0 && (
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold text-gray-800">Your Custom Services:</h3>
+          <div className="space-y-2">
+            {getCustomServices().map((customService, index) => (
+              <motion.div
+                key={customService.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg p-3"
+              >
+                <div className="flex items-center space-x-2">
+                  <SafeIcon icon={FiCheck} className="w-4 h-4 text-green-600" />
+                  <span className="text-sm font-medium text-gray-800">
+                    {customService.description}
+                  </span>
+                </div>
+                <button
+                  onClick={() => removeCustomService(customService.id)}
+                  className="p-1 rounded-full hover:bg-red-100 text-red-500 hover:text-red-700 transition-colors"
+                  aria-label="Remove custom service"
+                >
+                  <SafeIcon icon={FiX} className="w-4 h-4" />
+                </button>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="flex justify-between pt-6">
         <motion.button
